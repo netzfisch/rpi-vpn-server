@@ -1,4 +1,4 @@
-# VPN-Server for Raspberry PI as docker image
+# VPN server for the ARM based Raspberry PI
 
 Turn your [Raspberry PI](http://raspberrypi.org) within **15 minutes** into a
 **VPN server** allowing remote access and tunneling traffic through your
@@ -36,7 +36,7 @@ $ cat > /etc/network/interfaces << EOF
     address 192.168.PI.IP
     netmask 255.255.255.0
     gateway 192.168.XXX.XXX
-EOF
+  EOF
 ```
 
 - Configure in your router the **dynamic DNS updates** of your domain
@@ -50,36 +50,44 @@ Get ready to roll and run the container:
 
 ```sh
 $ docker run --detach \
-             --name vpn-server \
+             --name vpnserver \
              --restart unless-stopped \
-             -p 500:500/udp \
-             -p 4500:4500/ udp \
-             --env VPN_USER=user \
-             --env VPN_PASSWORD=password \
-             --env KEY_PASSPHRASE=passphrase \
              --volume /secrets:/etc/ipsec.d/private \
-             --privileged netzfisch/rpi-tvheadend
+             -p 500:500/udp \
+             -p 4500:4500/udp \
+             --privileged netzfisch/rpi-vpn-server
 ```
 
-Find the **key for remote access** clientCert.p12 in the local directory
-`/secrets`, which you need to import to your VPN client for remote access, e.g.
-[strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android)
+#### Create Server secretes
 
-#### Add more users
-
-To create more users for remote access you have to **go into the container**
+First create the **server secrets**, therefore **go into the running container**
 
 ```sh
-$ docker exec -it vpn-server /bin/ash
-/ export VPN_USER=user2
-/ export VPN_PASSWORD=SecretPassword
-/ export KEY_PASSPHRASE=SuperUnknown
-/ make-user-credentials.sh
+$ docker exec -it vpnserver /bin/ash
+/ export HOST=your-subdomain.spdns.de
+/ ./create-server-secrets.sh
+/ exit
+```
+
+#### Create User secrets
+
+Than create the **user secrets**
+
+```sh
+$ docker exec -it vpnserver /bin/ash
+/ export USER=DemoUser
+/ export PASSPHRASE=SuperUnknown
+/ ./create-user-secrets.sh
 / ipsec reload
 / exit
 ```
 
-Find the **key for remote access** again in the local directory `/secrets`.
+In your locally mapped `/secrets` directory you will find the **encrypted
+PKCS#12 archive clientCert.p12**, which you need to import to your remote VPN
+client e.g.
+[strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android).
+For **verification** and to unlock this archive you will be asked for above
+**PASSPHRASE**, so better remember!
 
 ## Debugging
 
@@ -92,7 +100,11 @@ If you have trouble, **check on the running container**:
   * `$ vi /etc/ipsec.conf`
   * `$ ipesc reload`
   * `$ ipsec status`
-  until you found a working configuration!
+
+until you found a working configuration, see **strongSwan**
+[documentation](https://wiki.strongswan.org/projects/strongswan/wiki/IntroductionTostrongSwan)
+and [configuration
+examples](https://wiki.strongswan.org/projects/strongswan/wiki/IKEv2Examples)!
 
 If all not helps, export the whole container `$ docker export vpnserver > vpn-server.tar`
 and examine the file system.
@@ -107,8 +119,9 @@ Have a fix, want to add or request a feature?
 
 ### TODOs
 
-- [ ] Consist naming of credentials/certificats/keys etc.
-- [ ] Add/ remove of users/keys interactively
+- [ ] Consist naming of credentials/certificates/keys/secrets etc.
+- [ ] Enable adding multiple users by personalising clientCert.pem
+- [ ] Add initial USER with random generated PASSPHRASE if not provided
 - [ ] Add nginx container to Serve ClientCert.p12
 - [ ] Add container for dynamic DNS updates
 

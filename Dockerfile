@@ -12,12 +12,9 @@ ENV KEY_PASSPHRASE key_passphrase
 RUN apk add --update strongswan \
  && rm -rf /var/cache/apk/*
 
-# Configure ipsec, etc. 
+# Configure ipsec, etc.
 COPY ipsec.conf /etc/ipsec.conf
-#COPY ipsec.secrets /etc/ipsec.secrets
-RUN echo ": RSA serverKey.pem"                  > /etc/ipsec.secrets
-RUN echo "$VPN_USER : EAP \"$VPN_PASSWORD\""   >> /etc/ipsec.secrets
-RUN echo "$VPN_USER : XAUTH \"$VPN_PASSWORD\"" >> /etc/ipsec.secrets
+RUN echo ": RSA serverKey.pem" > /etc/ipsec.secrets
 COPY sysctl.conf /etc/syctl.conf
 
 # TODO move to create_secrets.sh

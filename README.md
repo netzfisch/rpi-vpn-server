@@ -52,7 +52,7 @@ Get ready to roll and run the container:
 $ docker run --detach \
              --name vpnserver \
              --restart unless-stopped \
-             --volume /secrets:/etc/ipsec.d/private \
+             --volume /secrets:/mnt \
              -p 500:500/udp \
              -p 4500:4500/udp \
              --privileged netzfisch/rpi-vpn-server
@@ -64,9 +64,7 @@ First create the **server secrets**, therefore **go into the running container**
 
 ```sh
 $ docker exec -it vpnserver /bin/ash
-/ export HOST=your-subdomain.spdns.de
-/ ./create-server-secrets.sh
-/ exit
+/ create-server-secrets.sh your-subdomain.spdns.de
 ```
 
 #### Create User secrets
@@ -75,11 +73,7 @@ Than create the **user secrets**
 
 ```sh
 $ docker exec -it vpnserver /bin/ash
-/ export USER=DemoUser
-/ export PASSPHRASE=SuperUnknown
-/ ./create-user-secrets.sh
-/ ipsec reload
-/ exit
+/ create-user-secrets.sh DemoUser SavePassword
 ```
 
 In your locally mapped `/secrets` directory you will find the **encrypted
@@ -88,6 +82,14 @@ client e.g.
 [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android).
 For **verification** and to unlock this archive you will be asked for above
 **PASSPHRASE**, so better remember!
+
+#### Manage secrets
+
+To **export** do `$ docker exec -it vpnserver /bin/ash vpn-secrets.sh` export
+than you will find the set of secrets in the mounted volume `/secrets`.
+
+To **import** put your set of secrets into the mounted volume `/secrets` and
+execute `$ docker exec -it vpnserver /bin/ash vpn-secrets.sh import`.
 
 ## Debugging
 

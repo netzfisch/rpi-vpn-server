@@ -5,15 +5,15 @@ MAINTAINER netzfisch
 RUN apk add --update strongswan && \
     rm -rf /var/cache/apk/*
 
-# Configure ipsec, iptable
+# Copy ipsec, iptable configuration
 COPY ipsec.conf /etc/
 COPY ipsec.secrets /etc/
 COPY local.conf /etc/sysctl.d/
 
-# Copy scripts for creating and managing secrets
-COPY create-server-secrets.sh /usr/local/bin/
-COPY create-user-secrets.sh /usr/local/bin/
-COPY vpn-secrets.sh /usr/local/bin/
+# Create scripts for managing the service
+COPY setup.sh secrets.sh /usr/local/bin/
+ENV PATH /usr/local/bin:$PATH
+RUN chmod +x /usr/local/bin/*.sh
 
 # Enable access of secrets
 VOLUME /mnt
@@ -22,4 +22,4 @@ VOLUME /mnt
 EXPOSE 500/udp 4500/udp
 
 # Start VPN service
-CMD ipsec start --nofork
+CMD ["ipsec","start","--nofork"]

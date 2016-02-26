@@ -1,13 +1,14 @@
-# VPN server for the ARM based Raspberry PI
+# VPN server Image for the Raspberry PI
 
 Turn your [Raspberry PI](http://raspberrypi.org) within **15 minutes** into a
-**VPN server** allowing remote access and tunneling traffic through your
-trusted home network.
+**VPN server** allowing **remote access** and **tunneling traffic** through your
+trusted home network!
 
-This repository defines a **docker image for the ARM architecture**, based on
+This **images aims at ARM architecture**, uses the well known [stronSwan
+IPsec](https://www.strongswan.org/) stack, is based on
 [alpine Linux](http://www.alpinelinux.org/), which is with ~5 MB much smaller
-than most other distribution base images, and thus leads to a **slimmer vpn
-server image**:
+than most other distribution base, and thus leads to a **slimmer VPN server
+image**.
 
 [![](https://badge.imagelayers.io/netzfisch/rpi-vpn-server:latest.svg)](https://imagelayers.io/?images=netzfisch/rpi-vpn-server:latest)
 
@@ -53,43 +54,42 @@ $ docker run --detach \
              --name vpnserver \
              --restart unless-stopped \
              --volume /secrets:/mnt \
+             --cap-add NET_ADMIN \
              -p 500:500/udp \
              -p 4500:4500/udp \
-             --privileged netzfisch/rpi-vpn-server
+             netzfisch/rpi-vpn-server
 ```
 
-#### Create Server secretes
+#### Setup Server
 
-First create the **server secrets**, therefore **go into the running container**
+First setup the VPN server by defining the **gateway URL**, which will create
+the approbiate **server secrets**
 
 ```sh
-$ docker exec -it vpnserver /bin/ash
-/ create-server-secrets.sh your-subdomain.spdns.de
+$ docker exec vpnserver setup.sh your-subdomain.spdns.de
 ```
 
-#### Create User secrets
+#### Create User
 
 Than create the **user secrets**
 
 ```sh
-$ docker exec -it vpnserver /bin/ash
-/ create-user-secrets.sh DemoUser SavePassword
+$ docker exec vpnserver setup.sh user VpnUser SecretPassword
 ```
 
-In your locally mapped `/secrets` directory you will find the **encrypted
-PKCS#12 archive clientCert.p12**, which you need to import to your remote VPN
-client e.g.
+You will find in your locally mapped `/secrets` directory the **encrypted
+PKCS#12 archive clientCert.p12**, which you need to import at your remote VPN
+client and will be unlocked by the **SecretPassword**, e.g. use on Android
 [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android).
-For **verification** and to unlock this archive you will be asked for above
-**PASSPHRASE**, so better remember!
+The **password**  will be also used for **XAUTH scenarios**, so better remember!
 
 #### Manage secrets
 
-To **export** do `$ docker exec -it vpnserver /bin/ash vpn-secrets.sh` export
+To **export** do `$ docker exec vpnserver secrets.sh export`
 than you will find the set of secrets in the mounted volume `/secrets`.
 
 To **import** put your set of secrets into the mounted volume `/secrets` and
-execute `$ docker exec -it vpnserver /bin/ash vpn-secrets.sh import`.
+execute `$ docker exec vpnserver secrets.sh import`.
 
 ## Debugging
 
@@ -102,6 +102,8 @@ If you have trouble, **check on the running container**:
   * `$ vi /etc/ipsec.conf`
   * `$ ipesc reload`
   * `$ ipsec status`
+  * `$ routel`
+  * `$ iptables -t nat -L`
 
 until you found a working configuration, see **strongSwan**
 [documentation](https://wiki.strongswan.org/projects/strongswan/wiki/IntroductionTostrongSwan)

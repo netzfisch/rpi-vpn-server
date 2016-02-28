@@ -1,0 +1,15 @@
+#!/bin/ash
+# Called to start IPsec
+
+# By failure exit with "1"!
+set -e
+
+# Setup NAT forwarding if not already set, see '$ iptables -t nat -L' and
+# https://wiki.strongswan.org/projects/strongswan/wiki/ForwardingAndSplitTunneling
+
+iptables --table nat --check POSTROUTING --jump MASQUERADE || {
+  iptables --table nat --append POSTROUTING --jump MASQUERADE
+}
+
+# Start IPsec
+ipsec start --nofork

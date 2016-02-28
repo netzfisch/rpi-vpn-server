@@ -25,9 +25,11 @@ forget to _star_** the repository ;-)
 
 ### Setup
 
-- Install HypriotOS, which is based on Raspbian a debian derivate and results to
-a working docker host, see
-[Getting Started](http://blog.hypriot.com/getting-started-with-docker-and-linux-on-the-raspberry-pi/) !
+- **Install a debian Docker package**, which you download
+[here](http://blog.hypriot.com/downloads/) and install with `dpkg -i
+package_name.deb`. Alternatively install HypriotOS, which is based on Raspbian a
+debian derivate and results to a fully working docker host, see [Getting
+Started](http://blog.hypriot.com/getting-started-with-docker-and-linux-on-the-raspberry-pi/)!
 - Change your network interface to a static IP
 
 ```sh
@@ -66,7 +68,7 @@ First setup the VPN server by defining the **gateway URL**, which will create
 the approbiate **server secrets**
 
 ```sh
-$ docker exec vpnserver setup.sh your-subdomain.spdns.de
+$ docker exec vpnserver setup host your-subdomain.spdns.de
 ```
 
 #### Create User
@@ -74,10 +76,10 @@ $ docker exec vpnserver setup.sh your-subdomain.spdns.de
 Than create the **user secrets**
 
 ```sh
-$ docker exec vpnserver setup.sh user VpnUser SecretPassword
+$ docker exec vpnserver setup user VpnUser SecretPassword
 ```
 
-You will find in your locally mapped `/secrets` directory the **encrypted
+You will find in the locally mapped `/secrets` directory the **encrypted
 PKCS#12 archive clientCert.p12**, which you need to import at your remote VPN
 client and will be unlocked by the **SecretPassword**, e.g. use on Android
 [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android).
@@ -85,11 +87,31 @@ The **password**  will be also used for **XAUTH scenarios**, so better remember!
 
 #### Manage secrets
 
-To **export** do `$ docker exec vpnserver secrets.sh export`
+To **export** do `$ docker exec vpnserver secrets export`
 than you will find the set of secrets in the mounted volume `/secrets`.
 
 To **import** put your set of secrets into the mounted volume `/secrets` and
-execute `$ docker exec vpnserver secrets.sh import`.
+execute `$ docker exec vpnserver secrets import`. If you need XAUTH
+authentication - provide also username and password:
+
+```sh
+$ docker exec vpnserver secrets import VpnUser SeecretPassword
+```
+
+> **Attention** make sure **not to change naming** of CA-, Cert- and Key-files,
+otherwise the import  might not work!
+
+#### Configure routing
+
+Finally you need to configure your firewall/router to allow routing to your
+docker host, do something like
+
+```sh
+$ route add -net 10.10.10.0 netmask 255.255.255.0 gw 192.168.PI.IP
+```
+
+to send packages for the **remote subnet** `10.10.10.0` to your **docker host**
+`192.168.PI.IP`!
 
 ## Debugging
 
@@ -106,9 +128,9 @@ If you have trouble, **check on the running container**:
   * `$ iptables -t nat -L`
 
 until you found a working configuration, see **strongSwan**
-[documentation](https://wiki.strongswan.org/projects/strongswan/wiki/IntroductionTostrongSwan)
-and [configuration
-examples](https://wiki.strongswan.org/projects/strongswan/wiki/IKEv2Examples)!
+[introduction](https://wiki.strongswan.org/projects/strongswan/wiki/IntroductionTostrongSwan),
+[ipsec.onf parameters](https://wiki.strongswan.org/projects/strongswan/wiki/ConnSection) or
+[configuration examples](https://wiki.strongswan.org/projects/strongswan/wiki/IKEv2Examples)!
 
 If all not helps, export the whole container `$ docker export vpnserver > vpn-server.tar`
 and examine the file system.

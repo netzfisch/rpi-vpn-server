@@ -1,0 +1,65 @@
+#!/bin/ash
+# Setup VPN server
+
+case "$1" in
+  host)
+    # Assign variable
+    host=$2
+
+    # CA certificate (Authority)
+    ipsec pki --gen --outform pem > caKey.pem
+    ipsec pki --self --ca --in caKey.pem \
+              --dn "C=DE, O=HomeVPN, CN=strongSwan Root CA" \
+              --outform pem > caCert.pem
+
+    # VPN server certificate (Gateway)
+    ipsec pki --gen --outform pem > serverKey.pem
+    ipsec pki --pub --in serverKey.pem | ipsec pki --issue \
+              --cacert caCert.pem --cakey caKey.pem \
+              --dn "C=DE, O=HomeVPN, CN=${host}" \
+              --san="${host}" \
+              --flag serverAuth --flag ikeIntermediate \
+              --outform pem > serverCert.pem
+
+    # Move secrets to respective directories
+    mv caCert.pem /etc/ipsec.d/cacerts/
+    mv serverCert.pem /etc/ipsec.d/certs/
+    mv caKey.pem serverKey.pem /etc/ipsec.d/private/
+
+    # Add server key to IPsec secrets file
+    echo ": RSA serverKey.pem" > /etc/ipsec.secrets
+    ;;
+  user)
+    # Assign variables
+    user=$2
+    password=$3
+
+    # Create client key and certificate
+    ipsec pki --gen --outform pem > ${user}Key.pem
+    ipsec pki --pub --in ${user}Key.pem | ipsec pki --issue \
+              --cacert /etc/ipsec.d/cacerts/caCert.pem \
+              --cakey /etc/ipsec.d/private/caKey.pem \
+              --dn "C=DE, O=HomeVPN, CN=${user}" \
+              --outform pem > ${user}Cert.pem
+
+    # Create encrypted PKCS#12 archive for client
+    openssl pkcs12 -export -password "pass:${password}" \
+                   -inkey ${user}Key.pem \
+                   -in ${user}Cert.pem -name "${user}" \
+                   -certfile /etc/ipsec.d/cacerts/caCert.pem \
+                   -caname "strongSwan Root CA" \
+                   -out ${user}Cert.p12
+
+    # Move secrets to respective directories
+    mv ${user}Cert.pem /etc/ipsec.d/certs/
+    mv ${user}Key.pem /etc/ipsec.d/private/
+    mv --force ${user}Cert.p12 /mnt/
+
+    # Add XAUTH credentials IPsec secrets file
+    echo "${user} : XAUTH \"${password}\"" >> /etc/ipsec.secrets
+    ;;
+esac
+
+# Restart IPsec, some how '$ ipsec rereadall' does not do the job,
+# let's go aggressive
+ipsec restart

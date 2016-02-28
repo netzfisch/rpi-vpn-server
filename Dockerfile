@@ -7,13 +7,12 @@ RUN apk add --update strongswan && \
 
 # Copy ipsec, iptable configuration
 COPY ipsec.conf /etc/
-COPY ipsec.secrets /etc/
 COPY local.conf /etc/sysctl.d/
 
-# Create scripts for managing the service
-COPY setup.sh secrets.sh /usr/local/bin/
+# Create scripts to manage VPN service
+COPY init setup secrets /usr/local/bin/
 ENV PATH /usr/local/bin:$PATH
-RUN chmod +x /usr/local/bin/*.sh
+RUN chmod +x /usr/local/bin/*
 
 # Enable access of secrets
 VOLUME /mnt
@@ -22,4 +21,4 @@ VOLUME /mnt
 EXPOSE 500/udp 4500/udp
 
 # Start VPN service
-CMD ["ipsec","start","--nofork"]
+ENTRYPOINT ["/usr/local/bin/init"]

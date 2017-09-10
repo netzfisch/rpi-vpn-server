@@ -9,7 +9,7 @@ case "$1" in
     # CA certificate (Authority)
     ipsec pki --gen --outform pem > caKey.pem
     ipsec pki --self --ca --in caKey.pem \
-              --dn "C=DE, O=HomeVPN, CN=strongSwan Root CA" \
+              --dn "C=DE, O=HomeVPN, CN=HomeVPN Root CA" \
               --outform pem > caCert.pem
 
     # VPN server certificate (Gateway)
@@ -28,6 +28,9 @@ case "$1" in
 
     # Add server key to IPsec secrets file
     echo ": RSA serverKey.pem" > /etc/ipsec.secrets
+
+    # Update configuration with proper leftid
+    sed -i -- "s/@@host@@/${host}/g" /etc/ipsec.conf
     ;;
   user)
     # Assign variables
@@ -40,6 +43,7 @@ case "$1" in
               --cacert /etc/ipsec.d/cacerts/caCert.pem \
               --cakey /etc/ipsec.d/private/caKey.pem \
               --dn "C=DE, O=HomeVPN, CN=${user}" \
+              --san "${user}" \
               --outform pem > ${user}Cert.pem
 
     # Create encrypted PKCS#12 archive for client
@@ -47,13 +51,13 @@ case "$1" in
                    -inkey ${user}Key.pem \
                    -in ${user}Cert.pem -name "${user}" \
                    -certfile /etc/ipsec.d/cacerts/caCert.pem \
-                   -caname "strongSwan Root CA" \
+                   -caname "HomeVPN Root CA" \
                    -out ${user}Cert.p12
 
     # Move secrets to respective directories
     mv ${user}Cert.pem /etc/ipsec.d/certs/
     mv ${user}Key.pem /etc/ipsec.d/private/
-    mv --force ${user}Cert.p12 /mnt/
+    mv -f ${user}Cert.p12 /mnt/
 
     # Add XAUTH credentials IPsec secrets file
     echo "${user} : XAUTH \"${password}\"" >> /etc/ipsec.secrets

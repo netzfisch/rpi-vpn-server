@@ -11,5 +11,22 @@ iptables --table nat --check POSTROUTING --jump MASQUERADE || {
   iptables --table nat --append POSTROUTING --jump MASQUERADE
 }
 
+# When starting container for the first time we need to generate certificates.
+# They can be regenerated on demand by using setup scripts directly.
+if [ ! -f /.initialized ]; then
+    if [ "$VPN_PASSWORD" = "none" ] || [ "$VPN_PASSWORD" = "" ]; then
+        # Generate a random password
+        P1=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
+        P2=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
+        P3=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
+        VPN_PASSWORD="$P1$P2$P3"
+        echo "No VPN_PASSWORD set, generated a random one: $VPN_PASSWORD"
+    fi
+
+    setup host $VPN_HOST
+    setup user $VPN_USER $VPN_PASSWORD
+    touch /.initialized
+fi
+
 # Start IPsec
 ipsec start --nofork

@@ -39,16 +39,28 @@ Get ready to roll and run the container:
 
 ```sh
 $ docker run --detach \
+             --env VPN_HOST=your.domain.com \
+             --env VPN_USER=yourname \
+            (--env VPN_PASSWORD=SecretPassword) \
              --name vpnserver \
              --restart unless-stopped \
              --volume /secrets:/mnt \
              --cap-add NET_ADMIN \
-             -p 500:500/udp \
-             -p 4500:4500/udp \
+             --net host \
+             --publish 500:500/udp \
+             --publish 4500:4500/udp \
              netzfisch/rpi-vpn-server
 ```
 
-#### Setup Server
+If you do **not set** the environment variable **VPN_PASSWORD** a random one will be assigned and shown in the console!
+
+You will find in the locally mapped `/secrets:/mnt` directory the **encrypted PKCS#12 archive clientCert.p12**, which you need to import at your remote VPN client and will be unlocked by the **VPN_PASSWORD**, e.g. use on Android [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android). The **VPN_PASSWORD**  will be also used for **XAUTH scenarios**, so better remember!
+
+### Manage
+
+For manual configuration of hostname, user, password, and certificate you have the following options.  
+
+#### Change Certificates
 
 First setup the VPN server by defining the **gateway URL**, which will create the approbiate **server secrets**
 
@@ -56,7 +68,7 @@ First setup the VPN server by defining the **gateway URL**, which will create th
 $ docker exec vpnserver setup host your-subdomain.spdns.de
 ```
 
-#### Create User
+#### Change User
 
 Than create the **user secrets**
 
@@ -64,9 +76,9 @@ Than create the **user secrets**
 $ docker exec vpnserver setup user VpnUser SecretPassword
 ```
 
-You will find in the locally mapped `/secrets` directory the **encrypted PKCS#12 archive clientCert.p12**, which you need to import at your remote VPN client and will be unlocked by the **SecretPassword**, e.g. use on Android [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android). The **password**  will be also used for **XAUTH scenarios**, so better remember!
+You will find in the locally mapped `/secrets:/mnt` directory the **encrypted PKCS#12 archive clientCert.p12**, which you need to import at your remote VPN client and will be unlocked by the **SecretPassword**, e.g. use on Android [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android). The **password**  will be also used for **XAUTH scenarios**, so better remember!
 
-#### Manage secrets
+#### Exchange Secrets
 
 To **export** do `$ docker exec vpnserver secrets export` than you will find the set of secrets in the mounted volume `/secrets`.
 
@@ -116,7 +128,7 @@ Have a fix, want to add or request a feature? [Pull Requests](https://github.com
 
 - [ ] Consist naming of credentials/certificates/keys/secrets etc.
 - [ ] Enable adding multiple users by personalising clientCert.pem
-- [ ] Add initial USER with random generated PASSPHRASE if not provided
+- [x] Add initial USER with random generated PASSPHRASE if not provided
 - [ ] Add nginx container to Serve ClientCert.p12
 - [ ] Add container for dynamic DNS updates
 

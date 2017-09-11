@@ -37,6 +37,16 @@ case "$1" in
     user=$2
     password=$3
 
+    # Assign random password if not set
+    if [ "$password" = "" ] || [ "$password" = "none" ]; then
+        # Generate a random password
+        P1=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
+        P2=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
+        P3=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
+        password="$P1$P2$P3"
+        echo "No VPN_PASSWORD set, generated a random one: $password"
+    fi
+
     # Add XAUTH password to IPsec secrets file for user
     echo "${user} : XAUTH \"${password}\"" >> /etc/ipsec.secrets
 
@@ -58,7 +68,7 @@ case "$1" in
                    -out ${user}Cert.p12
 
     # Create password file for user
-    echo "Credentials for p12-file and XAUTH \"${user}\" : \"${password}\"" > ${user}Password
+    echo "Password for p12-file and XAUTH: \"${password}\"" > ${user}Password
 
     # Move secrets to respective directories
     mv ${user}Cert.pem /etc/ipsec.d/certs/

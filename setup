@@ -37,7 +37,10 @@ case "$1" in
     user=$2
     password=$3
 
-    # Create client key and certificate
+    # Add XAUTH password to IPsec secrets file for user
+    echo "${user} : XAUTH \"${password}\"" >> /etc/ipsec.secrets
+
+    # Create key and certificate for user
     ipsec pki --gen --outform pem > ${user}Key.pem
     ipsec pki --pub --in ${user}Key.pem | ipsec pki --issue \
               --cacert /etc/ipsec.d/cacerts/caCert.pem \
@@ -46,7 +49,7 @@ case "$1" in
               --san "${user}" \
               --outform pem > ${user}Cert.pem
 
-    # Create encrypted PKCS#12 archive for client
+    # Create encrypted PKCS#12 archive for user
     openssl pkcs12 -export -password "pass:${password}" \
                    -inkey ${user}Key.pem \
                    -in ${user}Cert.pem -name "${user}" \
@@ -54,13 +57,14 @@ case "$1" in
                    -caname "HomeVPN Root CA" \
                    -out ${user}Cert.p12
 
+    # Create password file for user
+    echo "Credentials for p12-file and XAUTH \"${user}\" : \"${password}\"" > ${user}Password
+
     # Move secrets to respective directories
     mv ${user}Cert.pem /etc/ipsec.d/certs/
     mv ${user}Key.pem /etc/ipsec.d/private/
-    mv -f ${user}Cert.p12 /mnt/
-
-    # Add XAUTH credentials IPsec secrets file
-    echo "${user} : XAUTH \"${password}\"" >> /etc/ipsec.secrets
+    mv ${user}Cert.p12 /home
+    mv ${user}Password /home
     ;;
 esac
 

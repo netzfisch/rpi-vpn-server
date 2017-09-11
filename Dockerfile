@@ -1,16 +1,16 @@
-FROM hypriot/alpine:3.6
+FROM hypriot/rpi-alpine:3.6
 MAINTAINER netzfisch
 
 # MAKE SURE to set appropriate configuration variables via option flags
 # '$ docker run --env ...' or via scripts '$ docker exec vpnserver setup ...',
 # if not set - at least a random password will be assigned!
-ENV VPN_HOST demo.example.com
-ENV VPN_USER user
-ENV VPN_PASSWORD none
+ENV VPN_HOST=""
+ENV VPN_USER=""
+ENV VPN_PASSWORD=none
 
 # Install strongswan packackes and clean up
-RUN apk add --update strongswan && \
-    rm -rf /var/cache/apk/*
+RUN apk add --update openssl strongswan \
+  && rm -rf /var/cache/apk/*
 
 # Copy ipsec, iptable configuration
 COPY ipsec.conf /etc/

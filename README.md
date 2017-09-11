@@ -41,7 +41,7 @@ Get ready to roll and run the container:
 $ docker run --detach \
              --env VPN_HOST=your.domain.com \
              --env VPN_USER=yourname \
-            (--env VPN_PASSWORD=SecretPassword) \
+             --env VPN_PASSWORD=userPassword \
              --name vpnserver \
              --restart unless-stopped \
              --volume /secrets:/mnt \
@@ -52,15 +52,15 @@ $ docker run --detach \
              netzfisch/rpi-vpn-server
 ```
 
-If you do **not set** the environment variable **VPN_PASSWORD** a random one will be assigned and shown in the console!
+You will find in the local host directory `/secrets`, which is mapped to container directory `/mnt`, the **userPassword file and encrypted PKCS#12 archive userCert.p12**, which you need to import at your remote VPN client and will be unlocked by the **VPN_PASSWORD**, e.g. use on Android [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android). The **VPN_PASSWORD**  will be also used for **XAUTH scenarios**, so better remember!
 
-You will find in the locally mapped `/secrets:/mnt` directory the **encrypted PKCS#12 archive clientCert.p12**, which you need to import at your remote VPN client and will be unlocked by the **VPN_PASSWORD**, e.g. use on Android [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android). The **VPN_PASSWORD**  will be also used for **XAUTH scenarios**, so better remember!
+**Thats all - everything below is optional!**
 
 ### Manage
 
-For manual configuration of hostname, user, password, and certificate you have the following options.  
+For manual configuration of hostname, user, password, certificate, and key you have the following options.  
 
-#### Change Certificates
+#### Create Root-Authority and Server-Certificate/ -Key
 
 First setup the VPN server by defining the **gateway URL**, which will create the approbiate **server secrets**
 
@@ -68,15 +68,19 @@ First setup the VPN server by defining the **gateway URL**, which will create th
 $ docker exec vpnserver setup host your-subdomain.spdns.de
 ```
 
-#### Change User
+**Attention** you do this normaly **only once**, cause a **second run will invalidate the access credentials** of the user ... **be warned!**.
 
-Than create the **user secrets**
+#### Add User
+
+To create additional **user access secrets**, do
 
 ```sh
 $ docker exec vpnserver setup user VpnUser SecretPassword
 ```
 
-You will find in the locally mapped `/secrets:/mnt` directory the **encrypted PKCS#12 archive clientCert.p12**, which you need to import at your remote VPN client and will be unlocked by the **SecretPassword**, e.g. use on Android [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android). The **password**  will be also used for **XAUTH scenarios**, so better remember!
+If you do **not set** the environment variable **SecretPassword** a random one will be assigned!
+
+You will find in the local host directory `/secrets`, which is mapped to container directory `/mnt`**, the **userPassword file and encrypted PKCS#12 archive userCert.p12**, which you need to import at your remote VPN client and will be unlocked by the **VPN_PASSWORD**, e.g. use on Android [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android). The **VPN_PASSWORD**  will be also used for **XAUTH scenarios**, so better remember!
 
 #### Exchange Secrets
 
@@ -85,12 +89,12 @@ To **export** do `$ docker exec vpnserver secrets export` than you will find the
 To **import** put your set of secrets into the mounted volume `/secrets` and execute `$ docker exec vpnserver secrets import`. If you need XAUTH authentication - provide also username and password:
 
 ```sh
-$ docker exec vpnserver secrets import VpnUser SeecretPassword
+$ docker exec vpnserver secrets import VpnUser SecretPassword
 ```
 
 > **Attention** make sure **not to change naming** of CA-, Cert- and Key-files, otherwise the import  might not work!
 
-#### Configure routing
+#### (Configure routing - obsolete?)
 
 Finally you need to configure your firewall/router to allow routing to your docker host, do something like
 
@@ -126,11 +130,10 @@ Have a fix, want to add or request a feature? [Pull Requests](https://github.com
 
 ### TODOs
 
-- [ ] Consist naming of credentials/certificates/keys/secrets etc.
-- [ ] Enable adding multiple users by personalising clientCert.pem
-- [x] Add initial USER with random generated PASSPHRASE if not provided
-- [ ] Add nginx container to Serve ClientCert.p12
-- [ ] Add container for dynamic DNS updates
+- [x] Consist naming of credentials/certificates/keys/secrets etc.
+- [x] Enable adding multiple users by personalising clientCert.pem
+- [x] Add random generated PASSWORD if not provided
+- [ ] Add docker-compose file for container with dynamic DNS updates via
 
 ### License
 

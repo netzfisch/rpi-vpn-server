@@ -40,11 +40,11 @@ Get ready to roll and run the container:
 ```sh
 $ docker run --detach \
              --env VPN_HOST=your.domain.com \
-             --env VPN_USER=yourname \
-             --env VPN_PASSWORD=userPassword \
+             --env VPN_USER=name \
+             --env VPN_PASSWORD=secret \
              --name vpnserver \
              --restart unless-stopped \
-             --volume /secrets:/mnt \
+             --volume /vpn-secrets:/mnt \
              --cap-add NET_ADMIN \
              --net host \
              --publish 500:500/udp \
@@ -52,57 +52,55 @@ $ docker run --detach \
              netzfisch/rpi-vpn-server
 ```
 
-You will find in the local host directory `/secrets`, which is mapped to container directory `/mnt`, the **userPassword file and encrypted PKCS#12 archive userCert.p12**, which you need to import at your remote VPN client and will be unlocked by the **VPN_PASSWORD**, e.g. use on Android [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android). The **VPN_PASSWORD**  will be also used for **XAUTH scenarios**, so better remember!
+In the local host-directory `/vpn-secrets` you will find the encrypted PKCS#12 archive userCert.p12 and the userP12-XAUTH.password file - **be patient may take up to 2 minutes** until everything is generated! **Import userCert.p12** (unlocked by userP12-XAUTH.password) into your remote system, e.g. use
 
-**Thats all - everything below is optional!**
+* **Android** - Install [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android) and add new profil.
+* **Linux** - Install  [network-manager](https://wiki.strongswan.org/projects/strongswan/wiki/NetworkManagerhttps://wiki.strongswan.org/projects/strongswan/wiki/NetworkManager).
+* **macOS X** - Open Keychain App and import the PKCS#12 file into the system-keychain (not login) and mark as "always trusted". Than go to [Network Settings] > [Add Interface] > [VPN (IKEv2)] and enter the credentials:
+  * ServerAdress = VPN_HOST
+  * RemoteID = VPN_HOST
+  * LocalID = VPN_USER
+  * AuthenticationSettings = Certificate of VPN_USER
+
+**And Thats all** - everything below is optional!
+
+> The **userP12-XAUTH.password** will be also used for **XAUTH scenarios** as shared key!
 
 ### Manage
 
-For manual configuration of hostname, user, password, certificate, and key you have the following options.  
+For manual configuration of hostname, user, password, certificates, and keys you have the following options.  
 
-#### Create Root-Authority and Server-Certificate/ -Key
+#### Create Root-Authority and Server-Credentials
 
-First setup the VPN server by defining the **gateway URL**, which will create the approbiate **server secrets**
+Start the `setup` script with the `host` option and the VPN_HOST as value to **create** the appropriate **server secrets**:
 
 ```sh
 $ docker exec vpnserver setup host your-subdomain.spdns.de
 ```
 
-**Attention** you do this normaly **only once**, cause a **second run will invalidate the access credentials** of the user ... **be warned!**.
+> **Attention** you do this normally only once, cause a **second run will invalidate credentials** ... be warned!
 
 #### Add User
 
-To create additional **user access secrets**, do
+Starting the `setup` script with the option `user` an values for name and password will **create additional user**  secrets:
 
 ```sh
-$ docker exec vpnserver setup user VpnUser SecretPassword
+$ docker exec vpnserver setup user VpnUser VpnPassword
 ```
 
-If you do **not set** the environment variable **SecretPassword** a random one will be assigned!
+> If you do **not set** the password parameter a random one will be assigned!
 
-You will find in the local host directory `/secrets`, which is mapped to container directory `/mnt`**, the **userPassword file and encrypted PKCS#12 archive userCert.p12**, which you need to import at your remote VPN client and will be unlocked by the **VPN_PASSWORD**, e.g. use on Android [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android). The **VPN_PASSWORD**  will be also used for **XAUTH scenarios**, so better remember!
+#### Export/Import Secrets
 
-#### Exchange Secrets
+To **export** do `$ docker exec vpnserver secrets export` and you will find all certificates, keys, p12-archive and userP12-XAUTH.password in the local host directory `/vpn-secrets`.
 
-To **export** do `$ docker exec vpnserver secrets export` than you will find the set of secrets in the mounted volume `/secrets`.
-
-To **import** put your set of secrets into the mounted volume `/secrets` and execute `$ docker exec vpnserver secrets import`. If you need XAUTH authentication - provide also username and password:
+To **import** put your set of **secrets** into the mounted volume `/secrets` and execute `$ docker exec vpnserver secrets import`. If you need XAUTH authentication - provide also username and password:
 
 ```sh
 $ docker exec vpnserver secrets import VpnUser SecretPassword
 ```
 
 > **Attention** make sure **not to change naming** of CA-, Cert- and Key-files, otherwise the import  might not work!
-
-#### (Configure routing - obsolete?)
-
-Finally you need to configure your firewall/router to allow routing to your docker host, do something like
-
-```sh
-$ route add -net 10.10.10.0 netmask 255.255.255.0 gw 192.168.PI.IP
-```
-
-to send packages for the **remote subnet** `10.10.10.0` to your **docker host** `192.168.PI.IP`!
 
 ## Debugging
 
@@ -130,10 +128,8 @@ Have a fix, want to add or request a feature? [Pull Requests](https://github.com
 
 ### TODOs
 
-- [x] Consist naming of credentials/certificates/keys/secrets etc.
-- [x] Enable adding multiple users by personalising clientCert.pem
-- [x] Add random generated PASSWORD if not provided
-- [ ] Add docker-compose file for container with dynamic DNS updates via
+- [ ] Automate builds with travis
+- [ ] Add docker-compose to start dynDNS-updater
 
 ### License
 

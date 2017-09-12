@@ -68,13 +68,16 @@ case "$1" in
                    -out ${user}Cert.p12
 
     # Create password file for user
-    echo "Password for p12-file and XAUTH: \"${password}\"" > ${user}Password
+    echo "${password}" > ${user}P12-XAUTH.password
 
     # Move secrets to respective directories
     mv ${user}Cert.pem /etc/ipsec.d/certs/
     mv ${user}Key.pem /etc/ipsec.d/private/
     mv ${user}Cert.p12 /home
-    mv ${user}Password /home
+    mv ${user}P12-XAUTH.password /home
+
+    # Make credentials available to mounted host directory
+    cp --force /home/* /mnt/
     ;;
 esac
 

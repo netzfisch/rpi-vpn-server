@@ -1,0 +1,22 @@
+sudo: required
+services:
+- docker
+language: bash
+script:
+# prepare qemu
+- docker run --rm --privileged multiarch/qemu-user-static:register --reset
+# build image
+- docker build -t netzfisch/rpi-vpn-server:build .
+# test image
+- docker run --entrypoint /bin/ash netzfisch/rpi-vpn-server:build -c "cat /etc/ipsec.conf"
+after_success:
+# push image
+- >
+  if [ "$TRAVIS_BRANCH" == "master" ]; then
+    docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+    TAG=$(grep "FROM " Dockerfile | sed 's/.*://')
+    docker tag netzfisch/rpi-vpn-server:build netzfisch/rpi-vpn-server:$TAG
+    docker tag netzfisch/rpi-vpn-server:build netzfisch/rpi-vpn-server:latest
+    docker push netzfisch/rpi-vpn-server:$TAG
+    docker push netzfisch/rpi-vpn-server:latest
+  fi

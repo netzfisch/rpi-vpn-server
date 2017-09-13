@@ -4,6 +4,7 @@ Turn your [Raspberry PI](http://raspberrypi.org) within **15 minutes** into a **
 
 This **images aims at ARM architecture**, uses the well known [stronSwan IPsec](https://www.strongswan.org/) stack, is based on [alpine Linux](http://www.alpinelinux.org/), which is with ~5 MB much smaller than most other distribution base, and thus leads to a **slimmer VPN server image**.
 
+[![Build Status](https://travis-ci.org/netzfisch/rpi-vpn-server.svg?branch=master)](https://travis-ci.org/netzfisch/rpi-vpn-server) 
 [![](https://images.microbadger.com/badges/version/netzfisch/rpi-vpn-server.svg)](https://microbadger.com/images/netzfisch/rpi-vpn-server "Inspect image") [![](https://images.microbadger.com/badges/image/netzfisch/rpi-vpn-server.svg)](https://microbadger.com/images/netzfisch/rpi-vpn-server "Inspect image")
 
 Find the source code at [GitHub](https://github.com/netzfisch/rpi-vpn-server) or the ready-to-run image in the [DockerHub](https://hub.docker.com/r/netzfisch/rpi-vpn-server/) and **do not forget to _star_** the repository ;-)
@@ -128,7 +129,6 @@ Have a fix, want to add or request a feature? [Pull Requests](https://github.com
 
 ### TODOs
 
-- [ ] Automate builds with travis
 - [ ] Add docker-compose to start dynDNS-updater
 
 ### License

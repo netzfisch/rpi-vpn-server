@@ -1,0 +1,24 @@
+version: "3.2"
+services:
+  ddclient:
+    image: netzfisch/rpi-dyndns:latest
+    environment:
+      - HOSTNAME
+      - UPDATE_TOKEN
+    restart: unless-stopped
+  host:
+    image: netzfisch/rpi-vpn-server:latest
+    environment:
+      - HOSTNAME
+      - VPN_USER
+      - VPN_PASSWORD
+      - VPN_HOSTDIR
+    cap_add:
+      - NET_ADMIN
+    network_mode: "host"
+    ports:
+      - 500:500
+      - 4500:4500
+    volumes:
+      - /${VPN_HOSTDIR}:/mnt
+    restart: unless-stopped

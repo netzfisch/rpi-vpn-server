@@ -2,11 +2,9 @@ FROM hypriot/rpi-alpine:3.6
 MAINTAINER netzfisch
 
 # MAKE SURE to set appropriate configuration variables via option flags
-# '$ docker run --env ...' or via scripts '$ docker exec vpnserver setup ...',
-# if not set - at least a random password will be assigned!
-ENV VPN_HOST=""
-ENV VPN_USER=""
-ENV VPN_PASSWORD=none
+# '$ docker run --env ...'. If VPN_USER is not set, see README for manual
+# "import" or "setup" of secrets!
+ENV VPN_USER=''
 
 # Install strongswan packackes and clean up
 RUN apk add --update openssl strongswan \

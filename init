@@ -12,8 +12,8 @@ iptables --table nat --check POSTROUTING --jump MASQUERADE || {
 
 # When starting container for the first time we need to generate certificates.
 # They can be regenerated on demand by using setup scripts directly.
-if [ ! -f /.initialized ]; then
-    setup host $VPN_HOST
+if [ ! -f /.initialized ] && [ $VPN_USER != '' ]; then
+    setup host $HOSTNAME
     setup user $VPN_USER $VPN_PASSWORD
     touch /.initialized
 fi

@@ -38,7 +38,7 @@ case "$1" in
     password=$3
 
     # Assign random password if not set
-    if [ "$password" = "" ] || [ "$password" = "none" ]; then
+    if [ $password = '' ]; then
         # Generate a random password
         P1=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
         P2=`cat /dev/urandom | tr -cd abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789 | head -c 3`
@@ -68,13 +68,13 @@ case "$1" in
                    -out ${user}Cert.p12
 
     # Create password file for user
-    echo "${password}" > ${user}P12-XAUTH.password
+    echo "${password}" > ${user}P12-XAUTH-Password.txt
 
     # Move secrets to respective directories
     mv ${user}Cert.pem /etc/ipsec.d/certs/
     mv ${user}Key.pem /etc/ipsec.d/private/
     mv ${user}Cert.p12 /home
-    mv ${user}P12-XAUTH.password /home
+    mv ${user}P12-XAUTH-Password.txt /home
 
     # Make credentials available to mounted host directory
     cp --force /home/* /mnt/

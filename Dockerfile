@@ -16,7 +16,6 @@ COPY local.conf /etc/sysctl.d/
 
 # Create scripts to manage VPN service
 COPY init setup secrets /usr/local/bin/
-ENV PATH /usr/local/bin:$PATH
 RUN chmod +x /usr/local/bin/*
 
 # Enable access of secrets

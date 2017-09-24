@@ -109,10 +109,10 @@ $ docker exec vpnserver setup user VpnUser VpnPassword
 
 To **export** do `$ docker exec vpnserver secrets export` and you will find all certificates, keys, p12-archive and userP12-XAUTH-Password.txt in the local host directory `/vpn-secrets`.
 
-To **import** put your set of **secrets** into the mounted volume `/vpn-secrets` and execute `$ docker exec vpnserver secrets import`. If you need XAUTH authentication - provide also username and password:
+To **import** put your set of **secrets** into the mounted volume `/vpn-secrets` and execute:
 
 ```sh
-$ docker exec vpnserver secrets import VpnUser SecretPassword
+$ docker exec vpnserver secrets import HostUrl VpnUser SecretPassword
 ```
 
 > **Attention** make sure **not to change naming** of CA-, Cert- and Key-files, otherwise the import  might not work!

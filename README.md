@@ -4,8 +4,7 @@ Turn your [Raspberry PI](http://raspberrypi.org) within **15 minutes** into a **
 
 This **images aims at ARM architecture**, uses the well known [stronSwan IPsec](https://www.strongswan.org/) stack, is based on [alpine Linux](http://www.alpinelinux.org/), which is with ~5 MB much smaller than most other distribution base, and thus leads to a **slimmer VPN server image**.
 
-[![Build Status](https://travis-ci.org/netzfisch/rpi-vpn-server.svg?branch=master)](https://travis-ci.org/netzfisch/rpi-vpn-server)
-[![](https://images.microbadger.com/badges/version/netzfisch/rpi-vpn-server.svg)](https://microbadger.com/images/netzfisch/rpi-vpn-server "Inspect image") [![](https://images.microbadger.com/badges/image/netzfisch/rpi-vpn-server.svg)](https://microbadger.com/images/netzfisch/rpi-vpn-server "Inspect image")
+[![Build Status](https://travis-ci.org/netzfisch/rpi-vpn-server.svg?branch=master)](https://travis-ci.org/netzfisch/rpi-vpn-server) [![](https://images.microbadger.com/badges/version/netzfisch/rpi-vpn-server.svg)](https://microbadger.com/images/netzfisch/rpi-vpn-server "Inspect image") [![](https://images.microbadger.com/badges/image/netzfisch/rpi-vpn-server.svg)](https://microbadger.com/images/netzfisch/rpi-vpn-server "Inspect image")
 
 Find the source code at [GitHub](https://github.com/netzfisch/rpi-vpn-server) or the ready-to-run image in the [DockerHub](https://hub.docker.com/r/netzfisch/rpi-vpn-server/) and **do not forget to _star_** the repository ;-)
 
@@ -17,22 +16,27 @@ Find the source code at [GitHub](https://github.com/netzfisch/rpi-vpn-server) or
 
 ### Setup
 
-- **Install a debian Docker package**, which you download [here](http://blog.hypriot.com/downloads/) and install with `dpkg -i package_name.deb`. Alternatively install HypriotOS, which is based on Raspbian a debian derivate and results to a fully working docker host, see [Getting Started](http://blog.hypriot.com/getting-started-with-docker-and-linux-on-the-raspberry-pi/)!
-- Change your network interface to a static IP
+- **Install HypriotOS** - a Raspbian based debian derivate, which results to a fully working docker host, see [Getting Started](http://blog.hypriot.com/getting-started-with-docker-and-linux-on-the-raspberry-pi/) and download from [here](http://blog.hypriot.com/downloads/)!
+- Find the PI, login, change password, update packages, configure static network interface and integrate network storage if needed:
 
 ```sh
-$ cat > /etc/network/interfaces << EOF
+$ nmap -sP 192.168.YOUR.IP/24 | grep black-pearl
+$ ssh pirate@192.168.BLACK-PEARL.IP
+$ passwd
+$ sudo apt-get update && sudo apt-get upgrade
+$ sudo apt-get install nfs-common
+$ cat > /etc/network/interfaces.d/eth0 << EOF
   allow-hotplug eth0
   iface eth0 inet static
     address 192.168.PI.IP
     netmask 255.255.255.0
     gateway 192.168.XXX.XXX
   EOF
+$ echo "192.168.NAS.IP:/nfs/Public /mnt nfs auto  0 0" >> /etc/fstab
 ```
 
-- Configure in your router the **dynamic DNS updates** of your domain
+- Configure your router for **dynamic DNS updates** or use  [rpi-dyndns](https://github.com/netzfisch/rpi-dyndns).
 - Enable **port forwarding** at your firewall for 192.168.PI.IP and the UDP ports 500 and 4500
-- **Pull** the respective **docker image** `$ docker pull netzfisch/rpi-vpn-server`
 
 ### Usage
 
@@ -64,7 +68,7 @@ In the local host-directory `/vpn-secrets` you will find the encrypted PKCS#12 a
 
 **Thats all** - everything below is optional!
 
-> The **userP12-XAUTH-Password.txt** will be also used for **XAUTH scenarios** as shared key!
+> The **userP12-XAUTH-Password.txt** will be also used as key for **XAUTH scenarios**!
 
 #### Dynamic DNS Updates
 
@@ -89,6 +93,14 @@ For manual configuration of hostname, user, password, certificates, and keys you
 Start the container without the environment variables and than execute the `setup` script with the `host` option to **create** the appropriate **server secrets**:
 
 ```sh
+$ docker run --name vpnserver \
+             --cap-add NET_ADMIN \
+             --publish 500:500/udp \
+             --publish 4500:4500/udp \
+             --volume /vpn-secrets:/mnt \
+             --restart unless-stopped \
+             --detach \
+             netzfisch/rpi-vpn-server
 $ docker exec vpnserver setup host your-subdomain.spdns.de
 ```
 
@@ -96,7 +108,7 @@ $ docker exec vpnserver setup host your-subdomain.spdns.de
 
 #### Add User
 
-Starting the `setup` script with the option `user` an values for name and password will **create additional user**  secrets:
+Starting the `setup` script with the option `user` and values for name and password will **create additional user**  secrets:
 
 ```sh
 $ docker exec vpnserver setup user VpnUser VpnPassword
@@ -123,14 +135,31 @@ If you have trouble, **check on the running container**:
 * First look at the **logs** `$ docker logs -f vpnserver`,
 * get the **ipsec status** `$ docker exec vpnserver ipsec statusall` or
 * **go into** for further investigation `$ docker exec -it vpnserver ash`, than
-  iterate through
-  * `$ vi /etc/ipsec.conf`
-  * `$ ipesc reload`
-  * `$ ipsec status`
-  * `$ routel`
-  * `$ iptables -t nat -L`
+  check following commands to debug for a working configuration:
 
-until you found a working configuration, see **strongSwan** [introduction](https://wiki.strongswan.org/projects/strongswan/wiki/IntroductionTostrongSwan), [ipsec.onf parameters](https://wiki.strongswan.org/projects/strongswan/wiki/ConnSection) or [configuration examples](https://wiki.strongswan.org/projects/strongswan/wiki/IKEv2Examples)!
+```sh
+$ ipsec statusall / swanctl -L / swanctl -l
+$ route -n
+  Kernel IP routing table
+  Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+  0.0.0.0         172.17.0.1      0.0.0.0         UG    0      0        0 eth0
+  172.17.0.0      0.0.0.0         255.255.0.0     U     0      0        0 eth0
+$ iptables -t nat -L
+  Chain PREROUTING (policy ACCEPT)
+  target     prot opt source               destination
+  Chain INPUT (policy ACCEPT)
+  target     prot opt source               destination
+  Chain OUTPUT (policy ACCEPT)
+  target     prot opt source               destination
+  Chain POSTROUTING (policy ACCEPT)
+  target     prot opt source               destination
+  MASQUERADE  all  --  anywhere             anywhere # <= IMPORTANT!
+$ vi /etc/ipsec.conf
+$ ipesc restart
+```
+
+If your routing is messed up (compare with above), **flush routes** `$ routef` and start over,
+see also **strongSwan** [introduction](https://wiki.strongswan.org/projects/strongswan/wiki/IntroductionTostrongSwan), [ipsec.onf parameters](https://wiki.strongswan.org/projects/strongswan/wiki/ConnSection), [configuration examples](https://wiki.strongswan.org/projects/strongswan/wiki/IKEv2Examples) and [forwarding + split tunneling](https://wiki.strongswan.org/projects/strongswan/wiki/ForwardingAndSplitTunneling) for details!
 
 If all not helps, export the whole container `$ docker export vpnserver > vpn-server.tar` and examine the file system.
 
@@ -142,7 +171,7 @@ Have a fix, want to add or request a feature? [Pull Requests](https://github.com
 
 ### TODOs
 
-- [ ] all good!
+- [x] all good!
 
 ### License
 

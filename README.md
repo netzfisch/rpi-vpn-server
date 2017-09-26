@@ -44,7 +44,6 @@ $ docker run --name vpnserver \
              --env VPN_USER=name \
              --env VPN_PASSWORD=secret \
              --cap-add NET_ADMIN \
-             --net host \
              --publish 500:500/udp \
              --publish 4500:4500/udp \
              --volume /vpn-secrets:/mnt \

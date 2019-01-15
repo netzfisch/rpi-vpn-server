@@ -1,3 +1,9 @@
+# first time, do
+# $ env HOSTNAME=netzfisch.spdns.de UPDATE_TOKEN=xxxx-xxxx-xxxx VPN_HOSTDIR=/mnt/configs/vpn docker-compose -f rpi-vpn-server.yml up -d
+#
+# after reboot at restart enviroment varibles have to be set again :-(
+# $ env HOSTNAME=netzfisch.spdns.de UPDATE_TOKEN=xxxx-xxxx-xxxx VPN_HOSTDIR=/mnt/configs/vpn docker-compose -f rpi-vpn-server.yml restart
+
 version: "3.2"
 services:
   ddclient:
@@ -6,7 +12,7 @@ services:
       - HOSTNAME
       - UPDATE_TOKEN
     restart: unless-stopped
-  host:
+  vpnserver:
     image: netzfisch/rpi-vpn-server:latest
     environment:
       - HOSTNAME

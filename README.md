@@ -50,13 +50,13 @@ $ docker run --name vpnserver \
              --cap-add NET_ADMIN \
              --publish 500:500/udp \
              --publish 4500:4500/udp \
-             --volume /vpn-secrets:/mnt \
+             --volume /host-directory-of-secrets:/mnt \
              --restart unless-stopped \
              --detach \
              netzfisch/rpi-vpn-server
 ```
 
-In the local host-directory `/vpn-secrets` you will find the encrypted PKCS#12 archive userCert.p12 and the userP12-XAUTH-Password.txt file - **be patient may take up to 2 minutes** until everything is generated! **Import userCert.p12** (unlocked by userP12-XAUTH-Password.txt) into your remote system, e.g. use
+In the local host-directory `/host-directory-of-secrets` you will find the encrypted PKCS#12 archive userCert.p12 and the userP12-XAUTH-Password.txt file - **be patient may take up to 2 minutes** until everything is generated! **Import userCert.p12** (unlocked by userP12-XAUTH-Password.txt) into your remote system, e.g. use
 
 * **Android** - Install [strongSwan](https://play.google.com/store/apps/details?id=org.strongswan.android) and add new profil.
 * **Linux** - Install  [network-manager](https://wiki.strongswan.org/projects/strongswan/wiki/NetworkManagerhttps://wiki.strongswan.org/projects/strongswan/wiki/NetworkManager).
@@ -74,13 +74,13 @@ In the local host-directory `/vpn-secrets` you will find the encrypted PKCS#12 a
 
 If you want to go wild and use the VPN access in conjunction with  [rpi-dyndns](https://github.com/netzfisch/rpi-dyndns) for dynamic DNS updates, just run it with **docker-compose**
 
-    $ wget https://raw.githubusercontent.com/netzfisch/rpi-dyndns/master/docker-compose.yml
+    $ curl https://raw.githubusercontent.com/netzfisch/rpi-dyndns/master/docker-compose.yml -o rpi-vpn-server.yml
     $ env HOSTNAME=your.domain.com \
           UPDATE_TOKEN=imwg-futl-mzmw \
-          VPN_USER=name \
-          VPN_PASSWORD=secret \
-          VPN_HOSTDIR=/vpn-secrets \
-          docker-compose run -d
+          VPN_USER=name \       # optional, leave away and to
+          VPN_PASSWORD=secret \ # import existing secretes later!
+          VPN_HOSTDIR=/host-directory-of-secrets \
+          docker-compose -f rpi-vpn-server.yml up -d
 
 **Done!**
 
@@ -97,7 +97,7 @@ $ docker run --name vpnserver \
              --cap-add NET_ADMIN \
              --publish 500:500/udp \
              --publish 4500:4500/udp \
-             --volume /vpn-secrets:/mnt \
+             --volume /host-directory-of-secrets:/mnt \
              --restart unless-stopped \
              --detach \
              netzfisch/rpi-vpn-server
@@ -118,9 +118,9 @@ $ docker exec vpnserver setup user VpnUser VpnPassword
 
 #### Export/Import Secrets
 
-To **export** do `$ docker exec vpnserver secrets export` and you will find all certificates, keys, p12-archive and userP12-XAUTH-Password.txt in the local host directory `/vpn-secrets`.
+To **export** do `$ docker exec vpnserver secrets export` and you will find all certificates, keys, p12-archive and userP12-XAUTH-Password.txt in the local host directory `/host-directory-of-secrets`.
 
-To **import** put your set of **secrets** into the mounted volume `/vpn-secrets` and execute:
+To **import** put your set of **secrets** into the mounted volume `/host-directory-of-secrets` and execute:
 
 ```sh
 $ docker exec vpnserver secrets import HostUrl VpnUser SecretPassword
@@ -158,7 +158,7 @@ $ vi /etc/ipsec.conf
 $ ipesc restart
 ```
 
-If your routing is messed up (compare with above), **flush routes** `$ routef` and start over,
+If your routing is messed up (compare with above, you just NEED those TWO), **flush routes** `$ routef` and start over,
 see also **strongSwan** [introduction](https://wiki.strongswan.org/projects/strongswan/wiki/IntroductionTostrongSwan), [ipsec.onf parameters](https://wiki.strongswan.org/projects/strongswan/wiki/ConnSection), [configuration examples](https://wiki.strongswan.org/projects/strongswan/wiki/IKEv2Examples) and [forwarding + split tunneling](https://wiki.strongswan.org/projects/strongswan/wiki/ForwardingAndSplitTunneling) for details!
 
 If all not helps, export the whole container `$ docker export vpnserver > vpn-server.tar` and examine the file system.
